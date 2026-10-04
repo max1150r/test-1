@@ -1,0 +1,93 @@
+# Copia este fichero a "config.yaml" y edítalo. Los secretos van en ".env", NO aquí.
+
+discord:
+  webhook_url: "${DISCORD_WEBHOOK_URL}"   # se lee de .env
+  username: "Carrefour Monitor"
+  send_startup: true            # mensaje "Carrefour Monitor iniciado"
+  notify_out_of_stock: false    # avisar también cuando un producto vuelve a agotarse
+  notify_price_changes: false   # avisar de cambios de precio
+  mention_on_stock: ""          # opcional: "<@&ID_DEL_ROL>" o "@everyone" en avisos de stock
+  error_cooldown: 900           # segundos mínimos entre avisos de error iguales
+  error_threshold: 5            # fallos seguidos de un objetivo antes de avisar
+
+monitor:
+  interval: 10                  # segundos entre comprobaciones (global)
+  jitter: 2                     # variación aleatoria extra, 0..jitter segundos
+  timeout: 15                   # segundos por petición
+  retries: 3                    # reintentos por petición (con backoff y cambio de proxy)
+  concurrency: 5                # peticiones simultáneas como máximo
+  backoff_base: 5               # tras errores: 5s, 10s, 20s, 40s...
+  backoff_max: 300              # ...hasta este máximo
+  max_requests_per_minute: 120  # limitador global anti-exceso (protege a Carrefour y a ti)
+  min_interval: 1               # suelo duro de seguridad por objetivo
+  confirm_stock: true           # re-leer la ficha antes de avisar de stock (evita falsos positivos)
+  stock_renotify_cooldown: 60   # no repetir aviso de stock del mismo producto en menos de X s
+  min_positive_signals: 1       # 2 = exigir dos fuentes distintas (JSON + botón) para dar IN_STOCK
+  enrich_new_products: true     # completar resultados de listados que llegan sin datos
+  max_enrich_per_cycle: 5
+
+network:
+  proxies_file: "proxies.txt"   # opcional; si no existe se usa tu conexión
+  proxy_strategy: "round_robin" # round_robin | random
+  proxy_cooldown: 120           # segundos que un proxy problemático queda en pausa
+  proxy_max_failures: 3
+  proxy_fallback_direct: false  # si todos los proxies fallan, ¿usar tu IP? (false = esperar)
+  retry_backoff_base: 1
+  retry_backoff_max: 30
+  http2: false
+  accept_language: "es-ES,es;q=0.9"
+
+store:
+  base_url: "https://www.carrefour.es"
+  # SIN VERIFICAR contra la web real: comprueba con  python main.py --inspect "<url de búsqueda>"
+  search_url: "https://www.carrefour.es/?q={query}"
+  page_size: 24
+  offset_param: "offset"
+
+logging:
+  level: "INFO"                 # DEBUG | INFO | WARNING (WARNING oculta los CHECK/OOS)
+  file: "logs/monitor.log"
+  max_bytes: 5000000
+  backup_count: 5
+  console: true
+
+health:
+  summary_interval: 900         # resumen de estadísticas cada X s (0 = desactivado)
+  to_discord: false
+
+state:
+  db_path: "data/state.db"
+
+# ---------------------------------------------------------------- productos por URL
+products:
+  - name: "Pokémon 30 Aniversario Pack 2 Sobres"
+    type: url
+    value: "https://www.carrefour.es/pokemon-30th-aniversario-pack-2-sobres-con-moneda-ingles-6-anos/VC4A-34535245/p"
+    interval: 5                 # opcional: intervalo propio de este producto
+  - name: "Pokémon Caja Elite 30 Aniversario"
+    type: url
+    value: "https://www.carrefour.es/pokemon-caja-elite-30th-aniversario-ingles-juego-de-mesa-6-anos-unboxing/VC4A-34535246/p"
+
+# ---------------------------------------------------------------- búsquedas por palabras clave
+searches:
+  - query: "pokemon 30 aniversario"
+    interval: 15
+    query_match: all            # all = el nombre debe contener todas las palabras; any; none
+    exclude_keywords: ["álbum", "carpeta", "peluche", "figura"]
+    max_price: 100
+    max_pages: 1
+    notify_existing: false      # false = la 1ª pasada solo guarda lo existente, sin avisar
+
+  - query: "pokemon"
+    include_keywords: ["elite trainer", "caja elite", "30 aniversario", "megaevolución"]
+    exclude_keywords: ["álbum", "carpeta", "funda"]
+    max_price: 100
+    interval: 30
+
+  # Listado/categoría (estructura verificada): la URL de "Todos los Juguetes POKEMON".
+  - name: "Listado Pokémon (juguetes)"
+    type: listing
+    value: "https://www.carrefour.es/juguetes/todos-los-juguetes-pokemon/F-13z0oZ1a42/c"
+    max_pages: 2
+    interval: 30
+    exclude_keywords: ["peluche", "figura", "funko"]

@@ -1,0 +1,11 @@
+# Un proxy por línea. Copia a "proxies.txt" si quieres usarlos (es opcional).
+# Formatos admitidos (los ejemplos usan direcciones reservadas de documentación):
+#   IP:PUERTO
+#   USUARIO:CLAVE@IP:PUERTO
+#   http://IP:PUERTO
+#   http://USUARIO:CLAVE@IP:PUERTO
+#   https://USUARIO:CLAVE@IP:PUERTO
+#   socks5://USUARIO:CLAVE@IP:PUERTO     (requiere httpx[socks], ya incluido en requirements.txt)
+#   IP:PUERTO:USUARIO:CLAVE              (formato habitual de proveedores)
+203.0.113.10:8080
+http://usuario:clave@203.0.113.11:3128

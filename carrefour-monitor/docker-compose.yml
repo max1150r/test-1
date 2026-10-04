@@ -1,0 +1,15 @@
+services:
+  carrefour-monitor:
+    build: .
+    container_name: carrefour-monitor
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./proxies.txt:/app/proxies.txt:ro      # opcional: crea el fichero (aunque esté vacío) o quita esta línea
+      - ./data:/app/data
+      - ./logs:/app/logs
+    stop_grace_period: 40s
